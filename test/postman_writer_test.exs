@@ -72,5 +72,33 @@ defmodule Bureaucrat.PostmanWriterTest do
       assert get_in(json, ["item", Access.at(0), "item", Access.at(0), "response", Access.at(1), "status"]) ==
                "Not Found"
     end
+
+    test "writes json body as list", %{record: record} do
+      filename = "test/output/foo_bar.json"
+
+      record =
+        Map.replace!(record, :body_params, %{
+          "_json" => [
+            %{
+              "id" => "123",
+              "type" => "a_type"
+            }
+          ]
+        })
+        |> Map.replace!(:req_headers, [{"content-type", "application/json"}])
+
+      PostmanWriter.write([record], filename)
+      json = filename |> File.read!() |> JSON.decode!()
+
+      assert get_in(json, ["item", Access.at(0), "item", Access.at(0), "request", "body", "json"]) ==
+               [
+                 %{
+                   "disabled" => false,
+                   "key" => "id",
+                   "value" => "123"
+                 },
+                 %{"disabled" => false, "key" => "type", "value" => "a_type"}
+               ]
+    end
   end
 end
